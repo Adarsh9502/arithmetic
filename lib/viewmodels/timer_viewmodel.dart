@@ -26,9 +26,9 @@ class TimerViewModel extends GetxController {
   }
 
   void resetTimer() {
-    duration.value = const Duration();
     timer?.cancel();
   }
+
   void restartTimer() {
     duration.value = const Duration();
   }
@@ -37,4 +37,6 @@ class TimerViewModel extends GetxController {
 
   String get minutes => twoDigits(duration.value.inMinutes.remainder(60));
   String get seconds => twoDigits(duration.value.inSeconds.remainder(60));
+
+  String get getTime => '$minutes:$seconds';
 }

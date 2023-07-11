@@ -33,7 +33,7 @@ class NumberGeneratorModel {
 
       int num1 = numbers[index1];
       int num2 = numbers[index2];
-
+      
       int result =
           performOperation(num1, num2, addProb: addProb, subProb: subProb);
       numbers = updateNumbersList(numbers, index1, index2, result);
@@ -107,8 +107,10 @@ class NumberGeneratorModel {
       return '+';
     } else if (result == (num1 - num2).abs()) {
       return '-';
-    } else {
+    } else if (result == num1 * num2) {
       return '*';
+    } else {
+      return '/';
     }
   }
 }

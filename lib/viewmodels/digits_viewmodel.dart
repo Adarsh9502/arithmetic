@@ -1,21 +1,23 @@
-import 'package:arithmetic/model/levels.dart';
 import 'package:arithmetic/viewmodels/shake_widget_viewmodel.dart';
 import 'package:get/get.dart';
 
-import '../model/level_hard.dart';
+import '../model/levels.dart';
 import '../model/number_generator.dart';
-import '../utils/stack.dart';
+import '../helpers/stack.dart';
+import '../helpers/levels_list.dart';
 import '../utils/svg_strings.dart';
 
 class DigitsViewModel extends GetxController {
-  static Levels level = Hard();
-
+  int result = 0;
+  int currResult = 0;
   bool isRevealed = false;
 
-  late int result;
-  late List<String> steps;
-  late List<int> numbers;
-  late List<int> operatedNumbers;
+  Levels level = Easy();
+  List<int> numbers = [];
+  List<int> operatedNumbers = [];
+  List<String> userSteps = [];
+  List<String> resultSteps = [];
+
   late NumberGeneratorModel numberGeneratorModel;
 
   final Map<String, String> operations = {
@@ -28,10 +30,19 @@ class DigitsViewModel extends GetxController {
   List<ShakeWidgetViewModel> get shakeKey => List.generate(numbers.length,
       (index) => Get.put(ShakeWidgetViewModel(), tag: '$index'));
 
-  @override
-  void onInit() {
+  void initializeLevel(LevelsList levelsList) {
+    switch (levelsList) {
+      case LevelsList.easy:
+        level = Easy();
+        break;
+      case LevelsList.medium:
+        level = Medium();
+        break;
+      case LevelsList.hard:
+        level = Hard();
+        break;
+    }
     initialize(level);
-    super.onInit();
   }
 
   void initialize(Levels level) {
@@ -47,7 +58,7 @@ class DigitsViewModel extends GetxController {
       result = numberGeneratorModel.initilaize();
     } while (result <= level.maxNumberToGenerate || result > level.maxResult);
 
-    steps = numberGeneratorModel.steps;
+    resultSteps = numberGeneratorModel.steps;
     operatedNumbers = numberGeneratorModel.operatedNumbers;
     numbers = initializeNumbersToBeDisplayed(
       operatedNumbers,
@@ -73,19 +84,20 @@ class DigitsViewModel extends GetxController {
     update();
   }
 
-  final Stack stack = Stack<List>();
+  final Stack numberStack = Stack<List<int>>();
 
   push(List<int> numbers) {
-    stack.push([...numbers]);
-    numbers = stack.top();
+    numberStack.push([...numbers]);
+    numbers = numberStack.top();
     // deselectAll();
     update();
   }
 
   pop() {
-    if (stack.size() < 2) return;
-    stack.pop();
-    numbers = [...stack.top()];
+    if (numberStack.size() < 2) return;
+    numberStack.pop();
+    numbers = [...numberStack.top()];
+    userSteps.removeLast();
     deselectAll();
     update();
   }
@@ -95,24 +107,28 @@ class DigitsViewModel extends GetxController {
     selectedOperation = null;
   }
 
-  bool operate(int idx1, int idx2, String opr) {
+  void operate(int idx1, int idx2, String opr) {
+    int num1 = numbers[idx1];
+    int num2 = numbers[idx2];
+    currResult = 0;
     switch (opr) {
       case '+':
-        numbers[idx2] = numbers[idx1] + numbers[idx2];
+        currResult = num1 + num2;
         break;
       case '-':
-        numbers[idx2] = (numbers[idx1] - numbers[idx2]).abs();
+        currResult = (num1 - num2).abs();
         break;
       case '*':
-        numbers[idx2] = numbers[idx1] * numbers[idx2];
+        currResult = num1 * num2;
         break;
       case '/':
-        numbers[idx2] = numbers[idx1] ~/ numbers[idx2];
+        currResult = num1 ~/ num2;
         break;
     }
     numbers[idx1] = -1;
+    numbers[idx2] = currResult;
+    userSteps.add("$num1 $opr $num2 = ${numbers[idx2]}");
     push(numbers);
-    return true;
   }
 
   void isOperationPossible(int index) {
@@ -126,11 +142,16 @@ class DigitsViewModel extends GetxController {
         operate(selectedNumber!, index, selectedOperation!);
         selectedNumber = index;
         selectedOperation = null;
+        // deselectAll();
       }
     } else {
       selectedOperation = null;
       selectedNumber = selectedNumber == index ? null : index;
     }
+  }
+
+  bool isResultAchieved() {
+    return result == currResult;
   }
 
   List<int> initializeNumbersToBeDisplayed(List<int> numbers,
@@ -156,9 +177,10 @@ class DigitsViewModel extends GetxController {
   }
 
   generateNext() {
-    stack.clearStack();
+    numberStack.clearStack();
     deselectAll();
-    steps = [];
+    resultSteps = [];
+    userSteps = [];
     numbers = [];
     operatedNumbers = [];
     result = 0;

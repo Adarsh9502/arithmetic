@@ -1,3 +1,4 @@
+import 'package:arithmetic/widgets/success_dialog_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -12,15 +13,14 @@ import '../widgets/shake_widget.dart';
 import '../widgets/svg_icons.dart';
 
 class DigitsScreen extends StatelessWidget {
-  DigitsScreen({super.key});
-
-  final DigitsViewModel digitsViewModel = Get.find();
-  final TimerViewModel timerDigitsViewModel = Get.put(TimerViewModel());
+  const DigitsScreen({super.key});
 
   final int crossAxisCount = 3;
 
   @override
   Widget build(BuildContext context) {
+    final DigitsViewModel digitsViewModel = Get.find();
+    final TimerViewModel timerViewModel = Get.put(TimerViewModel());
     final deviceSize = MediaQuery.of(context).size;
     final deviceWidth = deviceSize.width;
     final deviceHeight = deviceSize.height;
@@ -39,46 +39,58 @@ class DigitsScreen extends StatelessWidget {
                 children: [
                   IconButton(
                     iconSize: deviceWidth / 13,
-                    splashColor: AppColors.yellow.withAlpha(100),
+                    splashColor: AppColors.background,
                     visualDensity: VisualDensity.adaptivePlatformDensity,
                     onPressed: () {
-                      Navigator.pop(context);
+                      // Navigator.pop(context);
+                      Get.back();
                     },
                     icon: const Icon(
                       Icons.arrow_back_ios_new_rounded,
                       color: AppColors.black,
                     ),
                   ),
-                  _buildTimer(deviceSize),
-                  Column(
-                    children: [
-                      IconButton(
-                        iconSize: deviceWidth / 12,
-                        splashColor: AppColors.yellow.withAlpha(100),
-                        visualDensity: VisualDensity.adaptivePlatformDensity,
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return DialogWidget(
-                                  steps: digitsViewModel.steps);
-                            },
+                  _buildTimer(deviceSize, timerViewModel),
+                  InkResponse(
+                    onLongPress: () {
+                      digitsViewModel.isRevealed = true;
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return DialogWidget(
+                            steps: digitsViewModel.resultSteps,
+                            result: true,
                           );
-                          digitsViewModel.isRevealed = true;
                         },
-                        icon: const Icon(
-                          Icons.lightbulb,
-                          color: AppColors.yellow,
+                      );
+                    },
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return DialogWidget(steps: digitsViewModel.userSteps);
+                        },
+                      );
+                    },
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(
+                            Icons.stacked_line_chart,
+                            color: AppColors.yellow,
+                            size: deviceWidth / 12,
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Reveal',
-                        style: TextStyle(
-                          fontSize: deviceWidth / 35,
-                          letterSpacing: 1,
+                        Text(
+                          'Steps',
+                          style: TextStyle(
+                            fontSize: deviceWidth / 35,
+                            letterSpacing: 1,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -112,7 +124,8 @@ class DigitsScreen extends StatelessWidget {
                       return AnimatedScale(
                         duration: const Duration(milliseconds: 300),
                         scale: digitsViewModel.isNumVisible(index) ? 1 : 0,
-                        child: _buildGridItems(index, deviceSize),
+                        child: _buildGridItems(
+                            context, index, digitsViewModel, timerViewModel),
                       );
                     },
                   );
@@ -126,7 +139,8 @@ class DigitsScreen extends StatelessWidget {
                 children: digitsViewModel.operations.keys
                     .map((e) => GetBuilder<DigitsViewModel>(
                           builder: (digitsViewModel) {
-                            return _buildOperationWidget(e, deviceSize);
+                            return _buildOperationWidget(
+                                e, deviceSize, digitsViewModel);
                           },
                         ))
                     .toList(),
@@ -175,7 +189,7 @@ class DigitsScreen extends StatelessWidget {
               child: DottedButtons(
                 onTap: () {
                   digitsViewModel.generateNext();
-                  timerDigitsViewModel.restartTimer();
+                  timerViewModel.restartTimer();
                 },
                 backgroundColor: AppColors.yellow,
                 strokeWidth: 1,
@@ -192,10 +206,10 @@ class DigitsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTimer(Size size) {
+  Widget _buildTimer(Size size, TimerViewModel timerViewModel) {
     return Obx(
       () => Text(
-        '${timerDigitsViewModel.minutes}:${timerDigitsViewModel.seconds}',
+        timerViewModel.getTime,
         style: TextStyle(
           fontSize: size.width / 30,
           letterSpacing: 1,
@@ -204,11 +218,28 @@ class DigitsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGridItems(int index, Size size) {
+  Widget _buildGridItems(BuildContext context, int index,
+      DigitsViewModel digitsViewModel, TimerViewModel timerViewModel) {
+    final size = MediaQuery.of(context).size;
     return ShakeWidget(
       shakeKey: digitsViewModel.shakeKey[index],
       child: DottedButtons(
-        onTap: () => digitsViewModel.isOperationPossible(index),
+        onTap: () {
+          digitsViewModel.isOperationPossible(index);
+          if (digitsViewModel.isResultAchieved()) {
+            showDialog(
+              context: context,
+              builder: (context) {
+                return SuccessDialog(
+                    timeElapsed: timerViewModel.getTime,
+                    onTap: () {
+                      digitsViewModel.generateNext();
+                      timerViewModel.restartTimer();
+                    });
+              },
+            );
+          }
+        },
         backgroundColor: digitsViewModel.isNumSelected(index)
             ? AppColors.yellow
             : Colors.transparent,
@@ -229,7 +260,8 @@ class DigitsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOperationWidget(String e, Size size) {
+  Widget _buildOperationWidget(
+      String e, Size size, DigitsViewModel digitsViewModel) {
     return ButtonWidget(
       onTap: () {
         digitsViewModel.selectOperator(e);
