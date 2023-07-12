@@ -54,22 +54,18 @@ class DigitsScreen extends StatelessWidget {
                   InkResponse(
                     onLongPress: () {
                       digitsViewModel.isRevealed = true;
-                      showDialog(
+                      showAnimatedDialog(
                         context: context,
-                        builder: (context) {
-                          return DialogWidget(
-                            steps: digitsViewModel.resultSteps,
-                            result: true,
-                          );
-                        },
+                        widget: DialogWidget(
+                          steps: digitsViewModel.resultSteps,
+                          result: true,
+                        ),
                       );
                     },
                     onTap: () {
-                      showDialog(
+                      showAnimatedDialog(
                         context: context,
-                        builder: (context) {
-                          return DialogWidget(steps: digitsViewModel.userSteps);
-                        },
+                        widget: DialogWidget(steps: digitsViewModel.userSteps),
                       );
                     },
                     child: Column(
@@ -163,9 +159,10 @@ class DigitsScreen extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                      color: AppColors.black.withAlpha(50),
-                      offset: const Offset(1, 4),
-                      blurRadius: 20)
+                    color: AppColors.black.withAlpha(50),
+                    offset: const Offset(1, 4),
+                    blurRadius: 20,
+                  )
                 ],
               ),
               child: ButtonWidget(
@@ -181,9 +178,10 @@ class DigitsScreen extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                      color: AppColors.black.withAlpha(100),
-                      offset: const Offset(2, 5),
-                      blurRadius: 10)
+                    color: AppColors.black.withAlpha(100),
+                    offset: const Offset(2, 5),
+                    blurRadius: 10,
+                  )
                 ],
               ),
               child: DottedButtons(
@@ -227,17 +225,18 @@ class DigitsScreen extends StatelessWidget {
         onTap: () {
           digitsViewModel.isOperationPossible(index);
           if (digitsViewModel.isResultAchieved()) {
-            showDialog(
-              context: context,
-              builder: (context) {
-                return SuccessDialog(
-                    timeElapsed: timerViewModel.getTime,
-                    onTap: () {
-                      digitsViewModel.generateNext();
-                      timerViewModel.restartTimer();
-                    });
-              },
-            );
+            Future.delayed(const Duration(milliseconds: 500), () {
+              showAnimatedDialog(
+                context: context,
+                widget: SuccessDialog(
+                  timeElapsed: timerViewModel.getTime,
+                  onTap: () {
+                    digitsViewModel.generateNext();
+                    timerViewModel.restartTimer();
+                  },
+                ),
+              );
+            });
           }
         },
         backgroundColor: digitsViewModel.isNumSelected(index)
@@ -274,6 +273,41 @@ class DigitsScreen extends StatelessWidget {
             ? AppColors.black
             : AppColors.background,
       ),
+    );
+  }
+
+  showAnimatedDialog({required BuildContext context, required Widget widget}) {
+    // showGeneralDialog(
+    //   context: context,
+    //   transitionBuilder: (context, animation, secondaryAnimation, child) {
+    //     var curve = Curves.easeOut.transform(animation.value);
+    //     return Transform.scale(
+    //       scale: curve,
+    //       child: widget,
+    //     );
+    //   },
+    //   pageBuilder: (context, animation, secondaryAnimation) {
+    //     return Container();
+    //   },
+    //   transitionDuration: const Duration(milliseconds: 200),
+    //   barrierLabel: '',
+    //   barrierDismissible: true,
+    // );
+
+    Get.generalDialog(
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        var curve = Curves.easeOut.transform(animation.value);
+        return Transform.scale(
+          scale: curve,
+          child: widget,
+        );
+      },
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Container();
+      },
+      transitionDuration: const Duration(milliseconds: 200),
+      barrierLabel: '',
+      barrierDismissible: true,
     );
   }
 }

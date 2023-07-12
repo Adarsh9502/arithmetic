@@ -9,7 +9,6 @@ import '../utils/svg_strings.dart';
 
 class DigitsViewModel extends GetxController {
   int result = 0;
-  int currResult = 0;
   bool isRevealed = false;
 
   Levels level = Easy();
@@ -110,7 +109,7 @@ class DigitsViewModel extends GetxController {
   void operate(int idx1, int idx2, String opr) {
     int num1 = numbers[idx1];
     int num2 = numbers[idx2];
-    currResult = 0;
+    int currResult = 0;
     switch (opr) {
       case '+':
         currResult = num1 + num2;
@@ -132,7 +131,9 @@ class DigitsViewModel extends GetxController {
   }
 
   void isOperationPossible(int index) {
-    if (selectedOperation != null && selectedNumber != null) {
+    if (selectedOperation != null &&
+        selectedNumber != null &&
+        selectedNumber != index) {
       if ((numbers[selectedNumber!] % numbers[index] != 0) &&
           selectedOperation == '/') {
         shakeKey[index].shake();
@@ -151,7 +152,10 @@ class DigitsViewModel extends GetxController {
   }
 
   bool isResultAchieved() {
-    return result == currResult;
+    if (selectedNumber != null) {
+      return result == numbers[selectedNumber!];
+    }
+    return false;
   }
 
   List<int> initializeNumbersToBeDisplayed(List<int> numbers,
